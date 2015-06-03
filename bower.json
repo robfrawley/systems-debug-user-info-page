@@ -1,0 +1,11 @@
+{
+  "name": "Scribe Systems Portal",
+  "version": "1.0.0",
+  "dependencies": {
+    "jquery": "~2.0.3",
+    "jquery.smooth-scroll": "master",
+    "jquery.cookie": "1.4.1",
+    "bootstrap": "3.1.1",
+    "font-awesome": "4.3.0"
+  }
+}

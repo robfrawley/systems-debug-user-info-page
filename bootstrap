@@ -1,0 +1,129 @@
+#!/bin/bash
+
+##
+## Bootstrap File
+## Handle deps and simple build steps for static services page
+## Author    : Rob Frawley 2nd
+## License   : MIT Licence
+## Copyright : 2015 Scribe Inc.
+##
+
+# Output action start
+function o_start {
+	echo "[Start]: ${1}"
+	sleep 1
+}
+
+# Output action done (success)
+function o_done {
+	#echo "[Done]: ${1}"
+	sleep 1
+}
+
+# Output action done (error)
+function o_error {
+	echo "[Task > Exception]: Received error code \"${1}\" while \"${2}\""
+	echo "[Task > Exiting]: Please fix the above error and try again."
+
+	exit ${1}
+}
+
+# Determine action done state (success/error)
+function o_status {
+	local ret="${1}"
+	local msg="${2}"
+
+	if [ "${ret}" -ne "0" ]; then
+		o_error "${ret}" "${msg}"
+	else
+		o_done "${msg}"
+	fi
+}
+
+# Handle updating bower dependencies
+function bower_update {
+	local msg="Updating Bower dependencies."
+
+	o_start "${msg}"
+	bower update
+	o_status "$?" "${msg}"
+}
+
+# Handle pruning old dependencies
+function bower_prune {
+	local msg="Pruning old bower dependencies."
+	o_start "${msg}"
+	bower prune
+	o_status "$?" "${msg}"
+}
+
+# Handle iterating and compressing local CSS
+function local_min_css_iterator {
+	local msg=""
+	local css_file=""
+	local css_file_min=""
+
+	rm assets/css-min/*.css
+
+	for css_file in assets/css/*.css; do
+		css_file_min="assets/css-min/$(basename ${css_file} .css).min.css"
+		msg=" - Compressing: ${css_file} to ${css_file_min}"
+		o_start "${msg}"
+		curl -X POST -s --data-urlencode "input@${css_file}" http://cssminifier.com/raw > "${css_file_min}"
+		o_status "$?" "${msg}"
+	done
+}
+
+# Handle minifying any local CSS
+function local_min_css {
+	local msg="Compressing all local CSS."
+
+	o_start "${msg}"
+	local_min_css_iterator
+	o_status "$?" "${msg}"
+}
+
+# Handle iterating and compressing local JS
+function local_min_js_iterator {
+	local msg=""
+	local js_file=""
+	local js_file_min=""
+
+	rm assets/js-min/*.js
+
+	for js_file in assets/js/*.js; do
+		js_file_min="assets/js-min/$(basename ${js_file} .js).min.js"
+		msg=" - Compressing: ${js_file} to ${js_file_min}"
+		o_start "${msg}"
+		curl -X POST -s --data-urlencode "input@${js_file}" http://javascript-minifier.com/raw > "${js_file_min}"
+		o_status "$?" "${msg}"
+	done
+}
+
+# Handle minifying any local JS
+function local_min_js {
+	local msg="Compressing all local JavaScripts."
+
+	o_start "${msg}"
+	local_min_js_iterator
+	o_status "$?" "${msg}"
+}
+
+# Main function
+function main {
+	bower_update
+	bower_prune
+	local_min_css
+	local_min_js
+}
+
+# Do it!
+echo
+echo "[[ ${0} ]] Execution started @ $(date)"
+echo
+main
+echo
+echo "[[ ${0} ]] Execution completed @ $(date)"
+echo
+
+## EOF
