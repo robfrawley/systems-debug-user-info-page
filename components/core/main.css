@@ -175,6 +175,9 @@
   color: #000000;
   background-color: rgba(72, 169, 151, 0.25);
 }
+.well-inner {
+  margin: 30px 20px 10px 20px;
+}
 .part-of-above-well {
   margin-top: -29px !important;
   border-top: none  !important;
@@ -228,6 +231,73 @@ p.credit {
 }
 .navbar-default .navbar-nav > li > a:hover {
   color: #F5A7A7;
+}
+.well-inner pre {
+  display: block;
+  padding: 10px;
+  margin: 20px 10px 10px;
+  font-size: 14px;
+  line-height: 1.42857;
+  word-break: break-all;
+  word-wrap: break-word;
+  color: rgba(60, 8, 37, 0.75);
+  border-radius: 0px;
+  border: 1px solid rgba(174, 92, 193, 0.25);
+  background-color: rgb(255, 255, 255);
+}
+.well-inner pre code {
+  padding: 0px;
+  font-size: inherit;
+  color: inherit;
+  white-space: pre-wrap;
+  background-color: transparent;
+  border-radius: 0px;
+  font-family: "Ubuntu Mono", monospace;
+}
+.table {
+  border: 1px solid rgba(78, 32, 89, 0.3);
+}
+.table-bordered > thead > tr > th,
+.table-bordered > tbody > tr > th,
+.table-bordered > tfoot > tr > th,
+.table-bordered > thead > tr > td,
+.table-bordered > tbody > tr > td,
+.table-bordered > tfoot > tr > td {
+   border: 1px solid rgba(78, 32, 89, 0.3);
+}
+
+.table-responsive {
+  margin: 20px 10px -10px 10px;
+}
+
+.table td code {
+  font-size: 14px;
+  line-height: 1.42857;
+  word-break: break-all;
+  word-wrap: break-word;
+  color: #000;
+  border-radius: 0px;
+  border: none;
+  background-color: rgb(255, 255, 255);
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.table thead tr th {
+  font-family: "Lato","Helvetica Neue",Helvetica,Arial,sans-serif;
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.table tbody tr th {
+  background-color: rgba(255, 255, 255, 0.75);
+  padding-top: 10px;
+  font-family: "Roboto Condensed";
+  font-weight: 400;
+}
+
+.table tbody tr td {
+  background-color: rgba(254, 107, 0, 0.05);
+  padding-bottom: 12px;
 }
 
 /* EOF */

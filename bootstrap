@@ -2,35 +2,48 @@
 
 ##
 ## Bootstrap File
-## Handle deps and simple build steps for static services page
+## Handle deps and simple build steps for user debug info page
 ## Author    : Rob Frawley 2nd
 ## License   : MIT Licence
 ## Copyright : 2015 Scribe Inc.
 ##
 
 # Global variables
+ASSET_FAKE_MINIFY=0
 ASSET_MANIFEST_CSS="./.manifest-assets-css"
 ASSET_MANIFEST_JS="./.manifest-assets-js"
+ASSET_MANIFEST_CP="./.manifest-assets-cp"
 ASSETS_DIR_BASE="./assets/"
-ASSETS_DIR_CSS="${ASSETS_DIR_BASE}/css/"
-ASSETS_DIR_JS="${ASSETS_DIR_BASE}/css/"
+ASSETS_DIR_CSS="${ASSETS_DIR_BASE}css/"
+ASSETS_DIR_JS="${ASSETS_DIR_BASE}js/"
+ASSETS_CONCAT_CSS="${ASSETS_DIR_CSS}all.min.css"
+ASSETS_CONCAT_JS="${ASSETS_DIR_JS}all.min.js"
+
+HTML_MINIFY=1
+HTML_MINIFIER_CLI="./node_modules/html-minifier/cli.js"
+HTML_MINIFIER_OPTS_INDEX_ORIG="index.src.html"
+HTML_MINIFIER_OPTS_INDEX_OUT="index.html"
+HTML_MINIFIER_OPTS="--remove-comments --collapse-whitespace --conservative-collapse --collapse-boolean-attributes --remove-attribute-quotes --remove-redundant-attributes --use-short-doctype --remove-empty-attributes --remove-script-type-attributes  --remove-style-link-type-attributes --lint --output=${HTML_MINIFIER_OPTS_INDEX_OUT} ${HTML_MINIFIER_OPTS_INDEX_ORIG}"
+
+SCRIPT_SITE_NAME="User Enviornment Debug Info"
+SCRIPT_START_UNIXTIME=""
 
 # Output action start
 function o_start {
-	echo "[Start]: ${1}"
-	sleep 1
+	echo "[ Task ] ${1}"
+	sleep .05
 }
 
 # Output action done (success)
 function o_done {
-	#echo "[Done]: ${1}"
-	sleep 1
+	echo "[ Done ] Completed task: ${1}"
+	sleep .05
 }
 
 # Output action done (error)
 function o_error {
-	echo "[Task > Exception]: Received error code \"${1}\" while \"${2}\""
-	echo "[Task > Exiting]: Please fix the above error and try again."
+	echo "[ Excp ] Received error code \"${1}\" for operation \"${2}\""
+	echo "[ Exit ]: Exception forcing premature exit. Fix the above error and try again."
 
 	exit ${1}
 }
@@ -42,9 +55,42 @@ function o_status {
 
 	if [ "${ret}" -ne "0" ]; then
 		o_error "${ret}" "${msg}"
+	fi
+}
+
+function o_status_verbose {
+	local ret="${1}"
+	local msg="${2}"
+
+	if [ "${ret}" -ne "0" ]; then
+		o_error "${ret}" "${msg}"
 	else
 		o_done "${msg}"
 	fi
+
+	echo -en "\n"
+}
+
+# Start/stop of entire script
+function o_main_start {
+	SCRIPT_START_UNIXTIME=$(date +%s)
+	echo -en "\n" \
+	         "Site       : ${SCRIPT_SITE_NAME}\n" \
+		     "Executable : ${0}\n" \
+		     "Action     : Starting Execution\n" \
+		     "Date/Time  : $(date)\n" \
+		     "\n"
+}
+
+function o_main_done {
+	local script_end_unixtime=$(date +%s)
+	echo -en \
+			" Site         : ${SCRIPT_SITE_NAME}\n" \
+			"Executable   : ${0}\n" \
+			"Action       : Completed Execution\n" \
+	     	"Date/Time    : $(date)\n" \
+			"Elapsed Time : $(((${script_end_unixtime} - ${SCRIPT_START_UNIXTIME}))) seconds" \
+			"\n\n"
 }
 
 # Handle updating bower dependencies
@@ -53,7 +99,7 @@ function bower_update {
 
 	o_start "${msg}"
 	bower update
-	o_status "$?" "${msg}"
+	o_status_verbose "$?" "${msg}"
 }
 
 # Handle pruning old dependencies
@@ -61,80 +107,323 @@ function bower_prune {
 	local msg="Pruning old bower dependencies."
 	o_start "${msg}"
 	bower prune
-	o_status "$?" "${msg}"
+	o_status_verbose "$?" "${msg}"
 }
 
-# Handle iterating and compressing local CSS
-function local_min_css_iterator {
+# Clean up old assets directory
+function local_assets_clean {
+	local msg="Cleaning previous runs."
+	local msgInner=""
+	o_start "${msg}"
+
+	if [[ -d "${ASSETS_DIR_BASE}" ]]; then
+		msgInner=" - Removing: ${ASSETS_DIR_BASE}"
+		o_start "${msgInner}"
+		rm -r "${ASSETS_DIR_BASE}" 2> /dev/null
+		o_status 0 "${msgInner}"
+	fi
+
+	msgInner=" - Creating: ${ASSETS_DIR_CSS}"
+	o_start "${msgInner}"
+	mkdir -p "${ASSETS_DIR_CSS}"
+	o_status 0 "${msgInner}"
+
+	msgInner=" - Creating: ${ASSETS_DIR_JS}"
+	o_start "${msgInner}"
+	mkdir -p "${ASSETS_DIR_JS}"
+	o_status 0 "${msgInner}"
+
+	o_status_verbose 0 "${msg}"
+}
+
+# CSS Functions
+function local_assets_css_move {
+	local msg=""
+
+	if [[ ! -f ${ASSET_MANIFEST_CSS} ]]; then
+		o_error "CSS manifest file does not exist at ${ASSET_MANIFEST_CSS}!"
+	fi
+
+	while read line; do
+		if [ ! -z "${line}" -a "${line}" != " " ]; then
+			msg=" - Copying: ${line} to ${ASSETS_DIR_CSS}$(basename ${line})"
+			o_start "${msg}"
+			if [[ ! -f "${line}" ]]; then
+				o_error "-1" "The file ${line} does not exist."
+			else
+				cp $line "${ASSETS_DIR_CSS}/"
+				o_status "$?" "${msg}"
+			fi
+		fi
+	done <${ASSET_MANIFEST_CSS}
+}
+
+function local_assets_css_minify_each {
 	local msg=""
 	local css_file=""
 	local css_file_min=""
 
-	rm assets/css-min/*.css
+	if [[ ! -f ${ASSET_MANIFEST_CSS} ]]; then
+		o_error "CSS manifest file does not exist at ${ASSET_MANIFEST_CSS}!"
+	fi
 
-	if [[ -f "" ]]; then
-		while read p; do
-  echo $p
-done <peptides.txt
-	for css_file in assets/css/*.css; do
-		css_file_min="assets/css-min/$(basename ${css_file} .css).min.css"
-		msg=" - Compressing: ${css_file} to ${css_file_min}"
+	while read line; do
+		if [ ! -z "${line}" -a "${line}" != " " ]; then
+			css_file="${ASSETS_DIR_CSS}$(basename ${line})"
+			css_file_min="${ASSETS_DIR_CSS}$(basename ${line} .css).min.css"
+			msg=" - Compressing: ${css_file} to ${css_file_min}"
+			if [[ ${ASSET_FAKE_MINIFY} == 1 ]]; then
+				msg="${msg} (faking operation)"
+			fi
+
+			o_start "${msg}"
+			if [[ ! -f "${line}" ]]; then
+				o_error "-1" "The file ${line} does not exist."
+			elif [[ ${ASSET_FAKE_MINIFY} == 1 ]]; then
+				cat ${css_file} > ${css_file_min}
+				o_status "$?" "${msg}"
+			else
+				curl -X POST -s --data-urlencode "input@${css_file}" http://cssminifier.com/raw > "${css_file_min}"
+				o_status "$?" "${msg}"
+			fi
+		fi
+	done <${ASSET_MANIFEST_CSS}
+}
+
+function local_assets_css_concat_each {
+	local msg=""
+	local css_file=""
+
+	if [[ ! -f ${ASSET_MANIFEST_CSS} ]]; then
+		o_error "CSS manifest file does not exist at ${ASSET_MANIFEST_CSS}!"
+	fi
+
+	while read line; do
+		css_file="${ASSETS_DIR_CSS}$(basename ${line} .css).min.css"
+		msg=" - Concatinating: ${css_file} into ${ASSETS_CONCAT_CSS}"
 		o_start "${msg}"
-		curl -X POST -s --data-urlencode "input@${css_file}" http://cssminifier.com/raw > "${css_file_min}"
+		echo -en "/* FILE START: ${css_file} */\n\n" >> ${ASSETS_CONCAT_CSS} \
+			&& cat $css_file >> ${ASSETS_CONCAT_CSS} \
+			&& echo -en "\n\n/* FILE END: ${css_file} */\n\n\n" >> ${ASSETS_CONCAT_CSS}
 		o_status "$?" "${msg}"
-	done
+	done <${ASSET_MANIFEST_CSS}
 }
 
-# Handle minifying any local CSS
-function local_min_css {
-	local msg="Compressing all local CSS."
+function local_assets_css {
+	local msgOuter="Creating final CSS using ${ASSET_MANIFEST_CSS} manifest file."
 
+	o_start "${msgOuter}"
+
+	local msg="Including required CSS assets."
 	o_start "${msg}"
-	local_min_css_iterator
+	local_assets_css_move
 	o_status "$?" "${msg}"
+
+	msg="Minifying CSS assets."
+	o_start "${msg}"
+	local_assets_css_minify_each
+	o_status "$?" "${msg}"
+
+	msg="Generating final (single) CSS asset."
+	o_start "${msg}"
+	local_assets_css_concat_each
+	o_status "$?" "${msg}"
+
+	o_status_verbose "$?" "${msgOuter}"
 }
 
-# Handle iterating and compressing local JS
-function local_min_js_iterator {
+# JS Functions
+function local_assets_js_move {
+	local msg=""
+
+	if [[ ! -f ${ASSET_MANIFEST_JS} ]]; then
+		o_error "JS manifest file does not exist at ${ASSET_MANIFEST_JS}!"
+	fi
+
+	while read line; do
+		if [ ! -z "${line}" -a "${line}" != " " ]; then
+			msg=" - Copying: ${line} to ${ASSETS_DIR_JS}$(basename ${line})"
+			o_start "${msg}"
+			if [[ ! -f "${line}" ]]; then
+				o_error "-1" "The file ${line} does not exist."
+			else
+				cp $line "${ASSETS_DIR_JS}/"
+				o_status "$?" "${msg}"
+			fi
+		fi
+	done <${ASSET_MANIFEST_JS}
+}
+
+function local_assets_js_minify_each {
 	local msg=""
 	local js_file=""
 	local js_file_min=""
 
-	rm assets/js-min/*.js
+	if [[ ! -f ${ASSET_MANIFEST_JS} ]]; then
+		o_error "JS manifest file does not exist at ${ASSET_MANIFEST_JS}!"
+	fi
 
-	for js_file in assets/js/*.js; do
-		js_file_min="assets/js-min/$(basename ${js_file} .js).min.js"
-		msg=" - Compressing: ${js_file} to ${js_file_min}"
-		o_start "${msg}"
-		curl -X POST -s --data-urlencode "input@${js_file}" http://javascript-minifier.com/raw > "${js_file_min}"
-		o_status "$?" "${msg}"
-	done
+	while read line; do
+		if [ ! -z "${line}" -a "${line}" != " " ]; then
+			js_file="${ASSETS_DIR_JS}$(basename ${line})"
+			js_file_min="${ASSETS_DIR_JS}$(basename ${line} .js).min.js"
+			msg=" - Compressing: ${js_file} to ${js_file_min}"
+			if [[ ${ASSET_FAKE_MINIFY} == 1 ]]; then
+				msg="${msg} (faking operation)"
+			fi
+
+			o_start "${msg}"
+			if [[ ! -f "${line}" ]]; then
+				o_error "-1" "The file ${line} does not exist."
+			elif [[ ${ASSET_FAKE_MINIFY} == 1 ]]; then
+				cat ${js_file} > ${js_file_min}
+				o_status "$?" "${msg}"
+			else
+				curl -X POST -s --data-urlencode "input@${js_file}" http://javascript-minifier.com/raw > "${js_file_min}"
+				o_status "$?" "${msg}"
+			fi
+		fi
+	done <${ASSET_MANIFEST_JS}
 }
 
-# Handle minifying any local JS
-function local_min_js {
-	local msg="Compressing all local JavaScripts."
+function local_assets_js_concat_each {
+	local msg=""
+	local js_file=""
+
+	if [[ ! -f ${ASSET_MANIFEST_JS} ]]; then
+		o_error "JS manifest file does not exist at ${ASSET_MANIFEST_JS}!"
+	fi
+
+	while read line; do
+		js_file="${ASSETS_DIR_JS}$(basename ${line} .js).min.js"
+		msg=" - Concatinating: ${js_file} into ${ASSETS_CONCAT_JS}"
+		o_start "${msg}"
+		echo -en "/* FILE START: ${js_file} */\n\n" >> ${ASSETS_CONCAT_JS} \
+			&& cat $js_file >> ${ASSETS_CONCAT_JS} \
+			&& echo -en "\n\n/* FILE END: ${js_file} */\n\n\n" >> ${ASSETS_CONCAT_JS}
+		o_status "$?" "${msg}"
+	done <${ASSET_MANIFEST_JS}
+}
+
+function local_assets_js {
+	local msgOuter="Creating final JS using ${ASSET_MANIFEST_JS} manifest file."
+
+	o_start "${msgOuter}"
+
+	local msg="Including required JS assets."
+	o_start "${msg}"
+	local_assets_js_move
+	o_status "$?" "${msg}"
+
+	msg="Minifying JS assets."
+	o_start "${msg}"
+	local_assets_js_minify_each
+	o_status "$?" "${msg}"
+
+	msg="Generating final (single) JS asset."
+	o_start "${msg}"
+	local_assets_js_concat_each
+	o_status "$?" "${msg}"
+
+	o_status_verbose "$?" "${msgOuter}"
+}
+
+# Mass Directory Copy Functions
+function local_assets_cp {
+	local msgOuter="Creating final other assets using ${ASSET_MANIFEST_CP} manifest file."
+
+	o_start "${msgOuter}"
+
+	local_assets_cp_move
+
+	o_status_verbose "$?" "${msgOuter}"
+}
+
+function local_assets_cp_move {
+	local msg=""
+	local paths=("" "" "")
+
+	if [[ ! -f ${ASSET_MANIFEST_CP} ]]; then
+		o_error "CP manifest file does not exist at ${ASSET_MANIFEST_CP}!"
+	fi
+
+	while read line; do
+		paths=($line)
+		if [ ! -z "${paths[0]}" -a "${paths[0]}" != " " -a ${#paths[@]} == 3 ]; then
+			msg=" - Copying: ${paths[0]}${paths[1]} to ${ASSETS_DIR_BASE}${paths[2]}"
+			o_start "${msg}"
+			if [[ ! -d "${paths[0]}${paths[1]}" ]]; then
+				o_error "-1" "The directory ${paths[0]}${paths[1]}/* does not exist."
+			else
+				mkdir -p "${ASSETS_DIR_BASE}${paths[2]}" \
+					&& cp -r ${paths[0]}${paths[1]}/* "${ASSETS_DIR_BASE}${paths[2]}"
+				o_status "$?" "${msg}"
+			fi
+		fi
+	done <${ASSET_MANIFEST_CP}
+}
+
+function local_assets_html {
+	local msgOuter=""
+	local msg=""
+
+	if [[ "${HTML_MINIFY}" != "1" ]]; then
+		msgOuter="Not minifying HTML; simply copying source HTML as is."
+		o_start "${msgOuter}"
+
+		msg=" - Copying: ${HTML_MINIFIER_OPTS_INDEX_ORIG} to ${HTML_MINIFIER_OPTS_INDEX_OUT}"
+		o_start "${msg}"
+		cp ${HTML_MINIFIER_OPTS_INDEX_ORIG} ${HTML_MINIFIER_OPTS_INDEX_OUT}
+		o_status "$?" "${msg}"		
+
+		o_status "0" "${msgOuter}"
+		exit 0
+	fi
+
+	msgOuter="Installing npm dependencies."
+
+	o_start "${msgOuter}"
+	npm install 2> /dev/null
+	o_status_verbose "$?" "${msgOuter}"
+
+	msgOuter="Minifying HTML source."
+	o_start "${msgOuter}"
+	local_assets_html_rm
+	local_assets_html_mk
+	o_status_verbose "0" "${msgOuter}"	
+}
+
+function local_assets_html_rm {
+	local msg=" - Removing: ${HTML_MINIFIER_OPTS_INDEX_OUT}"
 
 	o_start "${msg}"
-	local_min_js_iterator
+	rm "${HTML_MINIFIER_OPTS_INDEX_OUT}" 2> /dev/null || true
+	o_status "$?" "${msg}"
+}
+
+function local_assets_html_mk {
+	local msg=" - Compressing: ${HTML_MINIFIER_OPTS_INDEX_ORIG} to ${HTML_MINIFIER_OPTS_INDEX_OUT}"
+
+	o_start "${msg}"
+	${HTML_MINIFIER_CLI} ${HTML_MINIFIER_OPTS}
 	o_status "$?" "${msg}"
 }
 
 # Main function
 function main {
+	o_main_start "${0}"
 	bower_update
 	bower_prune
-	local_min_css
-	local_min_js
+	local_assets_clean
+	local_assets_css
+	local_assets_js
+	local_assets_cp
+	local_assets_html
+	o_main_done "${0}"
 }
 
 # Do it!
-echo
-echo "[[ ${0} ]] Execution started @ $(date)"
-echo
-main
-echo
-echo "[[ ${0} ]] Execution completed @ $(date)"
-echo
+
+main "${0}"
 
 ## EOF

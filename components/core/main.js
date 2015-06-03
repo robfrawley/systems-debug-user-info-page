@@ -9,80 +9,62 @@
 
 $(function () {
 
-  function getNewProgrammerResponse() {
+  var parser = new UAParser();
+  var env = parser.getResult();
+  env["resolution"] = {};
+  env.resolution["width"] = $(window).width();
+  env.resolution["height"] = $(window).height();
 
-    // perform ajax request for random "programmer responses" text
-    $.ajax({
-
-      url      : "https://excuses.scribe.systems/",
-      cache    : false,
-      dataType : "json"
-
-    })
-
-    // function called on ajax success
-    .success(function(text) {
-
-      // setup our variables and perform our element selections
-      var excuse       = '';
-      var creditName   = '';
-      var creditDomain = '';
-      var excuseEl     = $('p.excuse');
-      var creditEl     = $('p.credit');
-
-      // set loading screen
-      excuseEl.addClass('loading').html('<i class="fa fa-cog fa-spin"></i>');
-      creditEl.html('');
-
-      // if the ajax result is empty, null, or an empty object, an error occured
-      if (text == "" || text == null || $.isEmptyObject(text)) {
-        excuse       = 'Tried to retrieve a witty programmer comment, but couldn\'t parse the JSON. You\'r a developer; fix it.';
-        creditName   = 'RMF';
-        creditDomain = 'https://scribenet.com/';            
-
-      // otherwise, use the values provided by the ajax response 
-      }
-      else {
-        excuse       = text.excuse;
-        creditName   = text.resource_name;
-        creditDomain = text.resource_domain;
-      }
-
-      // remove loading class and add the relivent html entries
-      excuseEl.removeClass('loading').html('"'+excuse+'"');
-      creditEl.html('Courtesy of <a href="'+creditDomain+'">'+creditName+'</a>.');
-
-    })
-
-    // in the event of an ajax error...
-    .error(function(xhr) {
-
-      // setup our variables and perform our element selections
-      var excuse       = 'Tried to retrieve a witty programmer comment, but an AJAX error occured. You\'r a developer; fix it.';
-      var creditName   = 'RMF';
-      var creditDomain = 'https://scribenet.com/';
-      var excuseEl     = $('p.excuse');
-      var creditEl     = $('p.credit');
-
-      // remove loading class and add the error message
-      excuseEl.removeClass('loading').html(excuse);
-      creditEl.html($('Courtesy of <a href="'+creditDomain+'">'+creditName+'</a>'));
-
-    });
-
-  }
-
-  // get initial response
-  getNewProgrammerResponse();
-
-  // enable retrieving a new quote (register click handler)
-  $('#programmer-responses-wrapper h4 i').click(function(e) {
-
-    getNewProgrammerResponse();
-
-  }); 
+  $('#debug_overview_string').html(JSON.stringify(env));
 
 });
+
+$(function () {
+
+  var parser = new UAParser();
+  var table = $('#debug_detail_table');
+  var row = $('#debug_detail_table_tr');
+
+  function addRow(tableToAppendTo, rowToClone, scope, value, defaultValue) {
+    if (value == undefined || value == '' || !(value.length > 0)) {
+      if (defaultValue == undefined) {
+        return;
+      } else {
+        value = defaultValue;
+      }
+    }
+
+    newRow = rowToClone.clone();
+    newRow.find('th').html(scope);
+    newRow.find('code').html(value);
+    tableToAppendTo.find('tr:last').after(newRow);
+  }
+
+  addRow(table, row, 'User Agent', parser.getUA());
+
+  addRow(table, row, 'OS Type', parser.getOS().name);
+  if (parser.getOS().version != undefined && (parser.getOS().version != parser.getCPU().architecture)) {
+    addRow(table, row, 'OS Version', parser.getOS().version);
+  }
+  addRow(table, row, 'OS Architecture', parser.getCPU().architecture);
+  addRow(table, row, 'Browser Type', parser.getBrowser().name);
+  addRow(table, row, 'Browser Release', parser.getBrowser().major);
+  addRow(table, row, 'Browser Version', parser.getBrowser().version);
+  addRow(table, row, 'Engine Type', parser.getEngine().name);
+  addRow(table, row, 'Engine Version', parser.getEngine().version);
+
+  if (parser.getDevice().type == undefined) {
+    addRow(table, row, 'Device Type', 'Desktop');    
+  } else {
+    addRow(table, row, 'Device Type', parser.getDevice().type);
+    addRow(table, row, 'Device Vendor', parser.getDevice().vendor);
+    addRow(table, row, 'Device Model', parser.getDevice().model);    
+  }
+
+  row.remove();
+
+});
+
 
 $(function () {
 
