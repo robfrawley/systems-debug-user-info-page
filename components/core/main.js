@@ -26,7 +26,10 @@ $(function () {
   var row = $('#debug_detail_table_tr');
 
   function addRow(tableToAppendTo, rowToClone, scope, value, defaultValue) {
-    if (value == undefined || value == '' || !(value.length > 0)) {
+    console.log(value);
+    console.log(value.length);
+    console.log(value.toString().length);
+    if (value == undefined || value == "" || !(value.toString().length > 0)) {
       if (defaultValue == undefined) {
         return;
       } else {
@@ -60,6 +63,8 @@ $(function () {
     addRow(table, row, 'Device Vendor', parser.getDevice().vendor);
     addRow(table, row, 'Device Model', parser.getDevice().model);    
   }
+
+  addRow(table, row, 'Device Resolution', $(window).width().toString()+" x "+$(window).height().toString());
 
   row.remove();
 
