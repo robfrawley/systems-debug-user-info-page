@@ -8,6 +8,13 @@
 ## Copyright : 2015 Scribe Inc.
 ##
 
+# Global variables
+ASSET_MANIFEST_CSS="./.manifest-assets-css"
+ASSET_MANIFEST_JS="./.manifest-assets-js"
+ASSETS_DIR_BASE="./assets/"
+ASSETS_DIR_CSS="${ASSETS_DIR_BASE}/css/"
+ASSETS_DIR_JS="${ASSETS_DIR_BASE}/css/"
+
 # Output action start
 function o_start {
 	echo "[Start]: ${1}"
@@ -65,6 +72,10 @@ function local_min_css_iterator {
 
 	rm assets/css-min/*.css
 
+	if [[ -f "" ]]; then
+		while read p; do
+  echo $p
+done <peptides.txt
 	for css_file in assets/css/*.css; do
 		css_file_min="assets/css-min/$(basename ${css_file} .css).min.css"
 		msg=" - Compressing: ${css_file} to ${css_file_min}"

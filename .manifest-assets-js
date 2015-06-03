@@ -1,0 +1,5 @@
+components/jquery/jquery.min.js
+components/jquery.cookie/jquery.cookie.js
+components/jquery.smooth-scroll/jquery.smooth-scroll.min.js
+components/bootstrap/dist/js/bootstrap.min.js
+assets/js/run.js
