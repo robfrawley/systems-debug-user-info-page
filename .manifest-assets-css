@@ -2,3 +2,4 @@ components/bootstrap/dist/css/bootstrap.css
 components/font-awesome/css/font-awesome.css
 components/core/theme.css
 components/core/main.css
+components/core/jira.css

@@ -3,3 +3,4 @@ components/jquery.smooth-scroll/jquery.smooth-scroll.js
 components/bootstrap/dist/js/bootstrap.js
 components/ua-parser-js/src/ua-parser.js
 components/core/main.js
+components/core/jira.js

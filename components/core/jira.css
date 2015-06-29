@@ -1,0 +1,11 @@
+/**
+ * Jira Stylesheet
+ */
+
+#atlwdg-trigger {
+  display: none;
+}
+
+#atlwdg-container {
+  width: 90%;
+}

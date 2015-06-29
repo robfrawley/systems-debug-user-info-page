@@ -7,15 +7,21 @@
  * @copyright : Scribe Inc.
  */
 
-$(function () {
-
+function getUaExtendedJson() {
+  
   var parser = new UAParser();
   var env = parser.getResult();
   env["resolution"] = {};
   env.resolution["width"] = $(window).width();
   env.resolution["height"] = $(window).height();
 
-  $('#debug_overview_string').html(JSON.stringify(env));
+  return JSON.stringify(env);
+
+}
+
+$(function () {
+
+  $('#debug_overview_string').html(getUaExtendedJson());
 
 });
 
@@ -26,9 +32,6 @@ $(function () {
   var row = $('#debug_detail_table_tr');
 
   function addRow(tableToAppendTo, rowToClone, scope, value, defaultValue) {
-    console.log(value);
-    console.log(value.length);
-    console.log(value.toString().length);
     if (value == undefined || value == "" || !(value.toString().length > 0)) {
       if (defaultValue == undefined) {
         return;

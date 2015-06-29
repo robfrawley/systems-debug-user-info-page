@@ -405,6 +405,7 @@ function local_assets_html_mk {
 	local msg=" - Compressing: ${HTML_MINIFIER_OPTS_INDEX_ORIG} to ${HTML_MINIFIER_OPTS_INDEX_OUT}"
 
 	o_start "${msg}"
+    echo "${HTML_MINIFIER_CLI} ${HTML_MINIFIER_OPTS}"
 	${HTML_MINIFIER_CLI} ${HTML_MINIFIER_OPTS}
 	o_status "$?" "${msg}"
 }
